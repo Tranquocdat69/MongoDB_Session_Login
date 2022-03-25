@@ -1,6 +1,6 @@
-using MongoDB_Test.Models;
-using MongoDB_Test.Models.SessionLogin;
-using MongoDB_Test.Services;
+using MongoDB_Session_Login.Models;
+using MongoDB_Session_Login.Models.SessionLogin;
+using MongoDB_Session_Login.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 

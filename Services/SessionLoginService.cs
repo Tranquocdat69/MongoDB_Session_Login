@@ -1,12 +1,12 @@
 ﻿using Microsoft.Extensions.Options;
 using MongoDB.Bson;
 using MongoDB.Driver;
-using MongoDB_Test.Models.Session;
-using MongoDB_Test.Models.SessionLogin;
+using MongoDB_Session_Login.Models.Session;
+using MongoDB_Session_Login.Models.SessionLogin;
 using System.Net;
 using System.Net.Sockets;
 
-namespace MongoDB_Test.Services
+namespace MongoDB_Session_Login.Services
 {
     public class SessionLoginService
     {

@@ -1,10 +1,10 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using MongoDB.Bson;
-using MongoDB_Test.Models.Session;
-using MongoDB_Test.Models.SessionLogin;
-using MongoDB_Test.Services;
+using MongoDB_Session_Login.Models.Session;
+using MongoDB_Session_Login.Models.SessionLogin;
+using MongoDB_Session_Login.Services;
 
-namespace MongoDB_Test.Controllers
+namespace MongoDB_Session_Login.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]

@@ -1,4 +1,4 @@
-﻿namespace MongoDB_Test.Models.SessionLogin
+﻿namespace MongoDB_Session_Login.Models.SessionLogin
 {
     public class SessionLoginName
     {

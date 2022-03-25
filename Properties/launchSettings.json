@@ -1,5 +1,4 @@
 {
-  "$schema": "https://json.schemastore.org/launchsettings.json",
   "iisSettings": {
     "windowsAuthentication": false,
     "anonymousAuthentication": true,
@@ -8,6 +7,7 @@
       "sslPort": 44309
     }
   },
+  "$schema": "https://json.schemastore.org/launchsettings.json",
   "profiles": {
     "MongoDB_Test": {
       "commandName": "Project",
@@ -16,8 +16,8 @@
       "environmentVariables": {
         "ASPNETCORE_ENVIRONMENT": "Development"
       },
-      "applicationUrl": "https://localhost:7028;http://localhost:5028",
-      "dotnetRunMessages": true
+      "dotnetRunMessages": true,
+      "applicationUrl": "https://localhost:7028;http://localhost:5028"
     },
     "IIS Express": {
       "commandName": "IISExpress",
@@ -26,6 +26,16 @@
       "environmentVariables": {
         "ASPNETCORE_ENVIRONMENT": "Production"
       }
+    },
+    "WSL": {
+      "commandName": "WSL2",
+      "launchBrowser": true,
+      "launchUrl": "https://localhost:7028/swagger",
+      "environmentVariables": {
+        "ASPNETCORE_URLS": "https://localhost:7028;http://localhost:5028",
+        "ASPNETCORE_ENVIRONMENT": "Development"
+      },
+      "distributionName": ""
     }
   }
 }

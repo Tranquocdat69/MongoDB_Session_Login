@@ -2,7 +2,7 @@
 using MongoDB.Bson.Serialization.Attributes;
 using System.Text.Json.Serialization;
 
-namespace MongoDB_Test.Models.Session
+namespace MongoDB_Session_Login.Models.Session
 {
     public class SessionLogin
     {
