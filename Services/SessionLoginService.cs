@@ -49,9 +49,17 @@ namespace MongoDB_Test.Services
         public async Task<List<SessionLogin>> GetSessionLoginFromIPAdressAsync(string IPAddress) =>
             await _sessionLoginCollection.Find(s => s.IPAddress == IPAddress).ToListAsync();
 
-       /* public async Task<bool> IsSessionTokenValid(string loginName, string oldSessionToken, string newSessionToken)
+        public async Task<bool> IsSessionTokenValid(string loginName, string currentSessionToken)
         {
-
-        }*/
+            SessionLogin sessionLogin = await _sessionLoginCollection.Find(s => s.LoginName == loginName).FirstOrDefaultAsync();
+            if (sessionLogin != null)
+            {
+                if (currentSessionToken == sessionLogin.TokenSession)
+                {
+                    return true;
+                }
+            }
+            return false;
+        }
     }
 }

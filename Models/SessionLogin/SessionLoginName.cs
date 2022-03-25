@@ -3,6 +3,6 @@
     public class SessionLoginName
     {
         public string LoginName { get; set; }
-        public string IPAddress { get; set; }
+        //public string IPAddress { get; set; }
     }
 }

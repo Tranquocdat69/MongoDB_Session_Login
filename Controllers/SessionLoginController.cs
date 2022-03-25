@@ -31,15 +31,19 @@ namespace MongoDB_Test.Controllers
         public async Task<SessionLogin> Get(string loginName) => 
             await _sessionLoginService.GetAsync(loginName);
 
+        [HttpGet("IsSessionTokenValid/{loginName}/{currentSessionToken}")]
+        public async Task<bool> IsSessionTokenValid(string loginName, string currentSessionToken) =>
+            await _sessionLoginService.IsSessionTokenValid(loginName, currentSessionToken);
+
         [HttpPost("AddAccount")]
         public async Task<IActionResult> Create([FromBody] SessionLoginName sessionLoginName)
         {
             var isSessionLoginExisted = await _sessionLoginService.GetAsync(sessionLoginName.LoginName) is not null;
             if (!isSessionLoginExisted)
             {
-                await _sessionLoginService.CreateAsync(sessionLoginName.LoginName, sessionLoginName.IPAddress);
+                await _sessionLoginService.CreateAsync(sessionLoginName.LoginName, HttpContext.Connection.RemoteIpAddress.ToString());
 
-                return NoContent();
+                return Ok();
             }
             else
             {
