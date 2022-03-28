@@ -11,7 +11,10 @@ namespace MongoDB_Session_Login.Services
     public class SessionLoginService
     {
         private readonly IMongoCollection<SessionLogin> _sessionLoginCollection;
+        public SessionLoginService()
+        {
 
+        }
         public SessionLoginService(IOptions<SessionLoginDatabaseSettings> sessionLoginDatabaseSettings)
         {
             var mongoClient = new MongoClient(sessionLoginDatabaseSettings.Value.ConnectionString);
@@ -24,6 +27,7 @@ namespace MongoDB_Session_Login.Services
         
         public async Task<SessionLogin> GetAsync(string loginName) => 
             await _sessionLoginCollection.Find(s => s.LoginName == loginName.Trim().ToLower()).FirstOrDefaultAsync();
+
         public async Task CreateAsync(string loginName, string ipAddress)
         {
             SessionLogin sessionLogin = new SessionLogin
@@ -35,14 +39,19 @@ namespace MongoDB_Session_Login.Services
             };
             await _sessionLoginCollection.InsertOneAsync(sessionLogin);
         }
-        public async Task UpdateTokenAsync(string loginName, string tokenSession)
+
+        public async Task<string> UpdateTokenAsync(string loginName)
         {
             SessionLogin sessionLogin = await _sessionLoginCollection.Find(s => s.LoginName == loginName).FirstOrDefaultAsync();
-            sessionLogin.TokenSession = tokenSession;
+            sessionLogin.TokenSession = Guid.NewGuid().ToString();
             await _sessionLoginCollection.ReplaceOneAsync(s => s.LoginName == loginName, sessionLogin);
+
+            return sessionLogin.TokenSession;
         }
+
         public async Task DeleteAsync(string loginName) =>
             await _sessionLoginCollection.DeleteOneAsync(s => s.LoginName == loginName);
+
         public async Task DeleteAllAsync() =>
             await _sessionLoginCollection.DeleteManyAsync(_ => true);
 

@@ -1,3 +1,4 @@
+using MongoDB_Session_Login.Extensions;
 using MongoDB_Session_Login.Models;
 using MongoDB_Session_Login.Models.SessionLogin;
 using MongoDB_Session_Login.Services;
@@ -15,6 +16,12 @@ builder.Services.AddSingleton<SessionLoginService>();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
+builder.Services.AddDistributedMemoryCache();
+builder.Services.AddSession(config => {
+    config.Cookie.Name = "session_login";
+    config.IdleTimeout = new TimeSpan(0, 0, 30);
+});
+
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
@@ -23,11 +30,16 @@ if (app.Environment.IsDevelopment())
     app.UseSwagger();
     app.UseSwaggerUI();
 }
-
 app.UseHttpsRedirection();
 
 app.UseAuthorization();
 
 app.MapControllers();
 
+app.UseSession();
+
+app.UseCheckSessionToken();
+
 app.Run();
+
+
