@@ -31,10 +31,10 @@ namespace MongoDB_Session_Login.Controllers
 
             return NotFound("Login Name does not exist");
         }
-
+/*
         [HttpGet("IsSessionTokenValid/{loginName}/{currentSessionToken}")]
         public async Task<bool> IsSessionTokenValid(string loginName, string currentSessionToken) =>
-            await _sessionLoginService.IsSessionTokenValid(loginName, currentSessionToken);
+            await _sessionLoginService.IsSessionTokenValid(loginName, currentSessionToken);*/
 
         [HttpGet("v1/GetAllSessionLogin")]
         public async Task<List<SessionLogin>> GetAll()
