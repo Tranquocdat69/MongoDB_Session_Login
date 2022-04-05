@@ -40,13 +40,14 @@ namespace MongoDB_Session_Login.Services
             await _sessionLoginCollection.InsertOneAsync(sessionLogin);
         }
 
-        public async Task<string> UpdateTokenAsync(string loginName)
+        public async Task<SessionLogin> UpdateTokenAsync(string loginName)
         {
-            SessionLogin sessionLogin = await _sessionLoginCollection.Find(s => s.LoginName == loginName).FirstOrDefaultAsync();
-            sessionLogin.TokenSession = Guid.NewGuid().ToString();
-            await _sessionLoginCollection.ReplaceOneAsync(s => s.LoginName == loginName, sessionLogin);
+            SessionLogin updateSessionLogin = await _sessionLoginCollection.Find(s => s.LoginName == loginName).FirstOrDefaultAsync();
+            updateSessionLogin.TokenSession = Guid.NewGuid().ToString();
+            await _sessionLoginCollection.ReplaceOneAsync(s => s.LoginName == loginName, updateSessionLogin);
+            SessionLogin newSessionLogin = await _sessionLoginCollection.Find(s => s.LoginName == loginName).FirstOrDefaultAsync();
 
-            return sessionLogin.TokenSession;
+            return newSessionLogin;
         }
 
         public async Task DeleteAsync(string loginName) =>

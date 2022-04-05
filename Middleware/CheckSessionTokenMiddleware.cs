@@ -30,12 +30,12 @@ namespace MongoDB_Session_Login.Middleware
                     }
                     else
                     {
-                        await httpContext.Response.WriteAsync("Please Login Again !!!");
+                        await httpContext.Response.WriteAsync(new UnauthorizedAccessException().ToString());
                     }
                 }
                 else
                 {
-                    await httpContext.Response.WriteAsync("Please Login !!!");
+                    await httpContext.Response.WriteAsync(new UnauthorizedAccessException().ToString());
                 }
             }
             else
