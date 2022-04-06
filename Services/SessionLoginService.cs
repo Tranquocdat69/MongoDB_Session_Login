@@ -49,6 +49,16 @@ namespace MongoDB_Session_Login.Services
             return sessionLogin.TokenSession;
         }
 
+        //code longpv2 nháp
+        public async Task<string> UpdateSessionToken(string loginName,string sessionLoginName)
+        {
+            SessionLogin sessionLogin = await _sessionLoginCollection.Find(s => s.LoginName == loginName).FirstOrDefaultAsync();
+            sessionLogin.TokenSession = sessionLoginName;
+            await _sessionLoginCollection.ReplaceOneAsync(s => s.LoginName == loginName, sessionLogin);
+
+            return sessionLogin.TokenSession;
+        }
+
         public async Task DeleteAsync(string loginName) =>
             await _sessionLoginCollection.DeleteOneAsync(s => s.LoginName == loginName);
 

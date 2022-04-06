@@ -1,5 +1,7 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using MongoDB.Bson;
+using MongoDB_Session_Login.Data;
+using MongoDB_Session_Login.Models.LoginForLongPv;
 using MongoDB_Session_Login.Models.Session;
 using MongoDB_Session_Login.Models.SessionLogin;
 using MongoDB_Session_Login.Services;
@@ -11,30 +13,73 @@ namespace MongoDB_Session_Login.Controllers
     public class SessionLoginController : ControllerBase
     {
         private readonly SessionLoginService _sessionLoginService;
+        private readonly OracleContext _oracleContext;
 
-        public SessionLoginController(SessionLoginService sessionLoginService)
+        public SessionLoginController(SessionLoginService sessionLoginService, OracleContext oracleContext)
         {
             _sessionLoginService = sessionLoginService;
+            _oracleContext = oracleContext;
         }
-        [HttpGet("FakeLogin/{loginName}")]
-        public async Task<IActionResult> FakeLogin(string loginName)
+        [HttpPost("RealLogin")]
+        public async Task<IActionResult> RealLogin(FormLogin login)
         {
-            SessionLogin sessionLogin = await _sessionLoginService.GetAsync(loginName);
-            if (sessionLogin is not null)
+            if (ModelState.IsValid)
             {
-                string newSessionToken = await _sessionLoginService.UpdateTokenAsync(loginName);
-                HttpContext.Session.SetString("current_user_login", loginName);
-                HttpContext.Session.SetString("current_session_token", newSessionToken);
+                if (string.IsNullOrEmpty(login.UserName))
+                {
+                    return BadRequest("fail");
+                }
+                var user = _oracleContext.UserLogin.Where(s => s.ALOGINNAME.Equals(login.UserName) && s.ACHKPASS2.Equals(login.Password)).FirstOrDefault();
 
-                return Ok(sessionLogin);
+                if (user != null)
+                {
+                    var result = from u in _oracleContext.UserLogin
+                                 join p in _oracleContext.Permits on u.ID equals p.UserId
+                                 join r in _oracleContext.ResponseLogin on u.ID equals r.UserId
+                                 where u.ALOGINNAME == login.UserName && u.ACHKPASS2 == login.Password
+                                 select new Login
+                                 {
+                                     Time = r.Time,
+                                     User = u,
+                                     Permit = p,
+
+                                 };
+                    SessionLogin sessionLogin = await _sessionLoginService.GetAsync(login.UserName);
+                    if (sessionLogin is null)
+                    {
+                        await _sessionLoginService.CreateAsync(login.UserName, HttpContext.Connection.RemoteIpAddress.ToString());
+                        //update token mongoDB
+                        string newSessionToken = await _sessionLoginService.UpdateTokenAsync(login.UserName);
+                        //session server 
+                        HttpContext.Session.SetString("current_user_login", login.UserName);
+                        HttpContext.Session.SetString("current_session_token", newSessionToken);
+
+                        //return Ok(sessionLogin);
+                    }
+                    else
+                    {
+                        //update token mongoDB
+                        string newSessionToken = await _sessionLoginService.UpdateTokenAsync(login.UserName);
+                        //session server 
+                        
+                        HttpContext.Session.SetString("current_user_login", login.UserName);
+                        HttpContext.Session.SetString("current_session_token", newSessionToken);
+
+                    }
+
+                    return Ok (result);
+                }
+                else
+                {
+                    return BadRequest("fail");
+                }
             }
-
             return NotFound("Login Name does not exist");
         }
-/*
-        [HttpGet("IsSessionTokenValid/{loginName}/{currentSessionToken}")]
-        public async Task<bool> IsSessionTokenValid(string loginName, string currentSessionToken) =>
-            await _sessionLoginService.IsSessionTokenValid(loginName, currentSessionToken);*/
+        /*
+                [HttpGet("IsSessionTokenValid/{loginName}/{currentSessionToken}")]
+                public async Task<bool> IsSessionTokenValid(string loginName, string currentSessionToken) =>
+                    await _sessionLoginService.IsSessionTokenValid(loginName, currentSessionToken);*/
 
         [HttpGet("v1/GetAllSessionLogin")]
         public async Task<List<SessionLogin>> GetAll()
@@ -44,16 +89,16 @@ namespace MongoDB_Session_Login.Controllers
                 Console.WriteLine(HttpContext.Session.GetString("current_user_login"));
                 Console.WriteLine(HttpContext.Session.GetString("current_session_token"));
             }
-            
+
             return await _sessionLoginService.GetAllAsync();
         }
 
         [HttpGet("v1/GetSessionLoginFromIPAddress/{ipAddress}")]
-        public async Task<List<SessionLogin>> GetSessionLoginFromIPAddress(string ipAddress) => 
+        public async Task<List<SessionLogin>> GetSessionLoginFromIPAddress(string ipAddress) =>
             await _sessionLoginService.GetSessionLoginFromIPAdressAsync(ipAddress);
 
         [HttpGet("v1/GetSessionLoginByAccount/{loginName}")]
-        public async Task<SessionLogin> Get(string loginName) => 
+        public async Task<SessionLogin> Get(string loginName) =>
             await _sessionLoginService.GetAsync(loginName);
 
         [HttpPost("v1/AddAccount")]
@@ -68,24 +113,24 @@ namespace MongoDB_Session_Login.Controllers
             }
             else
             {
-                return Conflict("Already existed login name"); 
+                return Conflict("Already existed login name");
             }
         }
 
-       /* [HttpPut("v1/UpdateTokenSession/{loginName}")]
-        public async Task<IActionResult> UpdateTokenSession(string loginName)
-        {
-            var sessionLogin = await _sessionLoginService.GetAsync(loginName);
+        /* [HttpPut("v1/UpdateTokenSession/{loginName}")]
+         public async Task<IActionResult> UpdateTokenSession(string loginName)
+         {
+             var sessionLogin = await _sessionLoginService.GetAsync(loginName);
 
-            if (sessionLogin is null)
-            {
-                return NotFound();
-            }
+             if (sessionLogin is null)
+             {
+                 return NotFound();
+             }
 
-            await _sessionLoginService.UpdateTokenAsync(loginName);
+             await _sessionLoginService.UpdateTokenAsync(loginName);
 
-            return NoContent();
-        }*/
+             return NoContent();
+         }*/
 
         [HttpDelete("v1/DeleteAccount/{loginName}")]
         public async Task<ActionResult> Delete(string loginName)

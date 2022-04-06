@@ -1,5 +1,4 @@
-﻿using MongoDB_Session_Login.Models.Session;
-using MongoDB_Session_Login.Services;
+﻿using MongoDB_Session_Login.Services;
 
 namespace MongoDB_Session_Login.Middleware
 {
