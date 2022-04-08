@@ -40,8 +40,19 @@ builder.Services.AddAuthentication("session_login")
         options.Cookie.SecurePolicy = CookieSecurePolicy.None;
         options.Cookie.HttpOnly = true;
         options.Cookie.Path = "/";
-        options.ExpireTimeSpan = TimeSpan.FromSeconds(3);
+        options.ExpireTimeSpan = TimeSpan.FromMinutes(1);
 
+      /*  options.Events = new CookieAuthenticationEvents()
+        {
+            OnSignedIn = context =>
+            {
+                DateTimeOffset? expiresUtc = context.Properties.ExpiresUtc;
+                return Task.CompletedTask;
+
+               *//* context.HttpContext.Response.Cookies.Delete("session_token", CustomCookieOptions.option);
+                await context.HttpContext.SignOutAsync();*//*
+            }
+        };*/
     });
 
 builder.Services.AddAuthorization(options =>

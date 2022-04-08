@@ -24,8 +24,8 @@ namespace MongoDB_Session_Login.Services
 
         public async Task<List<SessionLogin>> GetAllAsync() =>
             await _sessionLoginCollection.Find(_ => true).ToListAsync();
-        
-        public async Task<SessionLogin> GetAsync(string loginName) => 
+
+        public async Task<SessionLogin> GetAsync(string loginName) =>
             await _sessionLoginCollection.Find(s => s.ALoginName == loginName.Trim()).FirstOrDefaultAsync();
 
         public async Task CreateAsync(string loginName)
@@ -42,7 +42,7 @@ namespace MongoDB_Session_Login.Services
                 ABrowser = userAgent.Browser,
                 ALoginTime = DateTime.Now.ToString("dd-MMM-yy"),
                 ALogoutTime = null,
-                ASessionNo = loginName+DateTime.Now.ToString("yyyyMMddHHmmssffffff"),
+                ASessionNo = loginName + DateTime.Now.ToString("yyyyMMddHHmmssffffff"),
                 ASessionFirstLogin = 0,
                 AIsMobile = "N",
                 ABrowserName = userAgent.BrowserName,
@@ -74,15 +74,19 @@ namespace MongoDB_Session_Login.Services
 
             return newSessionLogin;
         }
-        
+
         public async Task<SessionLogin> UpdateLogoutTimeAsync(string loginName)
         {
-            SessionLogin updateSessionLogin = await _sessionLoginCollection.Find(s => s.ALoginName == loginName).FirstOrDefaultAsync();
-            updateSessionLogin.ALogoutTime = DateTime.Now.ToString("dd-MMM-yy");
-            await _sessionLoginCollection.ReplaceOneAsync(s => s.ALoginName == loginName, updateSessionLogin);
-            SessionLogin newSessionLogin = await _sessionLoginCollection.Find(s => s.ALoginName == loginName).FirstOrDefaultAsync();
+            if (!String.IsNullOrEmpty(loginName))
+            {
+                SessionLogin updateSessionLogin = await _sessionLoginCollection.Find(s => s.ALoginName == loginName).FirstOrDefaultAsync();
+                updateSessionLogin.ALogoutTime = DateTime.Now.ToString("dd-MMM-yy");
+                await _sessionLoginCollection.ReplaceOneAsync(s => s.ALoginName == loginName, updateSessionLogin);
+                SessionLogin newSessionLogin = await _sessionLoginCollection.Find(s => s.ALoginName == loginName).FirstOrDefaultAsync();
 
-            return newSessionLogin;
+                return newSessionLogin;
+            }
+            return null;
         }
 
         public async Task DeleteAsync(string loginName) =>

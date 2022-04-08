@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.Mvc;
 using MongoDB.Bson;
 using MongoDB_Session_Login.Models;
@@ -16,9 +17,10 @@ namespace MongoDB_Session_Login.Controllers
     public class SessionLoginController : ControllerBase
     {
         private readonly SessionLoginService _sessionLoginService;
-
-        public SessionLoginController(SessionLoginService sessionLoginService)
+        private readonly IDataProtector _dataProtector;
+        public SessionLoginController(SessionLoginService sessionLoginService, IDataProtectionProvider dataProtectionProvider)
         {
+            _dataProtector = dataProtectionProvider.CreateProtector("decode");
             _sessionLoginService = sessionLoginService;
         }
 
@@ -61,17 +63,11 @@ namespace MongoDB_Session_Login.Controllers
         [Authorize(Policy = "CheckLogout")]
         public async Task<IActionResult> FakeLogout()
         {
-            if (!String.IsNullOrEmpty(HttpContext.User.Identity.Name))
-            {
-                Response.Cookies.Delete("session_token", CustomCookieOptions.option);
-                await HttpContext.SignOutAsync();
-                await _sessionLoginService.UpdateLogoutTimeAsync(HttpContext.User.Identity.Name);
-            }
-            else
-            {
-                await _sessionLoginService.UpdateLogoutTimeAsync(null);
-            }
-                return Ok();
+            Response.Cookies.Delete("session_token", CustomCookieOptions.option);
+            await HttpContext.SignOutAsync();
+            await _sessionLoginService.UpdateLogoutTimeAsync(HttpContext.User.Identity.Name);
+           
+            return Ok();
         }
 
         [HttpGet("v1/GetAllSessionLogin")]
@@ -91,22 +87,22 @@ namespace MongoDB_Session_Login.Controllers
         public async Task<SessionLogin> Get(string loginName) =>
             await _sessionLoginService.GetAsync(loginName);
 
-     /*   [HttpPost("v1/AddAccount")]
-        [Authorize(Policy = "CheckSessionToken")]
-        public async Task<IActionResult> Create([FromBody] SessionLoginName sessionLoginName)
-        {
-            var isSessionLoginExisted = await _sessionLoginService.GetAsync(sessionLoginName.ALoginName) is not null;
-            if (!isSessionLoginExisted)
-            {
-                await _sessionLoginService.CreateAsync(sessionLoginName.ALoginName);
+        /*   [HttpPost("v1/AddAccount")]
+           [Authorize(Policy = "CheckSessionToken")]
+           public async Task<IActionResult> Create([FromBody] SessionLoginName sessionLoginName)
+           {
+               var isSessionLoginExisted = await _sessionLoginService.GetAsync(sessionLoginName.ALoginName) is not null;
+               if (!isSessionLoginExisted)
+               {
+                   await _sessionLoginService.CreateAsync(sessionLoginName.ALoginName);
 
-                return Ok();
-            }
-            else
-            {
-                return Conflict("Already existed login name");
-            }
-        }*/
+                   return Ok();
+               }
+               else
+               {
+                   return Conflict("Already existed login name");
+               }
+           }*/
 
         [HttpDelete("v1/DeleteAccount/{loginName}")]
         [Authorize(Policy = "CheckSessionToken")]
