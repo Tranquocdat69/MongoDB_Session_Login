@@ -1,9 +1,12 @@
+using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authorization;
 using MongoDB_Session_Login.AuthorizationRequirements;
 using MongoDB_Session_Login.Extensions;
+using MongoDB_Session_Login.Models;
 using MongoDB_Session_Login.Models.SessionLogin;
 using MongoDB_Session_Login.Services;
+using System.Net;
 
 WebApplicationBuilder builder = WebApplication.CreateBuilder(args);
 
@@ -11,16 +14,16 @@ builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowAll", builder =>
     {
-        builder.WithOrigins("https://client.fpts.com.vn:5500")
+        builder.WithOrigins("https://client.fpts.com.vn:5500", "http://client.fpts.com.vn:5500")
         .AllowAnyHeader()
         .AllowAnyMethod()
         .AllowCredentials();
         //.AllowAnyOrigin();
     });
 });
-// Add services to the container.
 
-builder.Services.AddControllers().AddJsonOptions(o => o.JsonSerializerOptions.PropertyNamingPolicy = null);
+builder.Services.AddControllers()
+    .AddJsonOptions(o => o.JsonSerializerOptions.PropertyNamingPolicy = null);
 
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
@@ -29,20 +32,17 @@ builder.Services.AddSwaggerGen();
 builder.Services.AddAuthentication("session_login")
     .AddCookie("session_login", options =>
     {
-        options.Cookie.Name = "session_login";
         options.LoginPath = "/api/SessionLogin/RequireLogin";
         options.AccessDeniedPath = "/api/SessionLogin/RequireLogin";
+        options.Cookie.Name = "session_login";
         options.Cookie.Domain = "fpts.com.vn";
-        options.Cookie.SameSite = SameSiteMode.Strict;
-        options.Cookie.SecurePolicy = CookieSecurePolicy.Always;
-        options.Cookie.HttpOnly = false;
-    });
+        options.Cookie.SameSite = SameSiteMode.Lax;
+        options.Cookie.SecurePolicy = CookieSecurePolicy.None;
+        options.Cookie.HttpOnly = true;
+        options.Cookie.Path = "/";
+        options.ExpireTimeSpan = TimeSpan.FromSeconds(3);
 
-/*builder.Services.AddDistributedMemoryCache();
-builder.Services.AddSession(config => {
-    config.Cookie.Name = "session_login";
-    config.IdleTimeout = new TimeSpan(0, 0, 30);
-});*/
+    });
 
 builder.Services.AddAuthorization(options =>
 {
@@ -50,26 +50,31 @@ builder.Services.AddAuthorization(options =>
     {
         configPolicyBuilder.RequireCustomCheckSessionToken();
     });
+
+    options.AddPolicy("CheckLogout", configPolicyBuilder =>
+    {
+        configPolicyBuilder.RequireCustomCheckLogout();
+    });
 });
 
 builder.Services.Configure<SessionLoginDatabaseSettings>(builder.Configuration.GetSection("SessionLoginDatabase"));
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddSingleton<IAuthorizationHandler, CheckSessionTokenRequirementHandler>();
+builder.Services.AddSingleton<IAuthorizationHandler, CheckSessionLogoutRequirementHandler>();
 builder.Services.AddSingleton<SessionLoginService>();
 
 WebApplication app = builder.Build();
 
-// Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {
-  /*  app.UseSwagger();
-    app.UseSwaggerUI();*/
+    app.UseSwagger();
+    app.UseSwaggerUI();
 }
 app.UseSwagger();
 
 app.UseSwaggerUI();
 
-app.UseHttpsRedirection();
+//app.UseHttpsRedirection();
 
 app.UseCors("AllowAll");
 

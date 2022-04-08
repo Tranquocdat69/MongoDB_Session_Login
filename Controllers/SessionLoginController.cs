@@ -2,6 +2,7 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using MongoDB.Bson;
+using MongoDB_Session_Login.Models;
 using MongoDB_Session_Login.Models.Session;
 using MongoDB_Session_Login.Models.SessionLogin;
 using MongoDB_Session_Login.Services;
@@ -21,24 +22,17 @@ namespace MongoDB_Session_Login.Controllers
             _sessionLoginService = sessionLoginService;
         }
 
-        [HttpGet("FakeLogin/{loginName}")]
-        public async Task<IActionResult> FakeLogin(string loginName)
+        [HttpPost("FakeLogin")]
+        public async Task<IActionResult> FakeLogin([FromBody] SessionLoginName sessionLoginName)
         {
-            SessionLogin sessionLogin = await _sessionLoginService.GetAsync(loginName);
+            SessionLogin sessionLogin = await _sessionLoginService.GetAsync(sessionLoginName.ALoginName);
             if (sessionLogin is not null)
             {
-                CookieOptions option = new CookieOptions();
-                option.Domain = "fpts.com.vn";
-                option.SameSite = SameSiteMode.Strict;
-                option.Secure = true;
-                option.HttpOnly = false;
-                SessionLogin newSessionLogin = await _sessionLoginService.UpdateTokenAsync(loginName);
-                Response.Cookies.Append("session_token", newSessionLogin.TokenSession, option);
-                /* HttpContext.Session.SetString("current_user_login", loginName);
-                 HttpContext.Session.SetString("current_session_token", newSessionToken);*/
+                SessionLogin newSessionLogin = await _sessionLoginService.UpdateWhenLoginAsync(sessionLoginName.ALoginName);
+                Response.Cookies.Append("session_token", newSessionLogin.AToken, CustomCookieOptions.option);
                 var userClaims = new List<Claim>()
                 {
-                    new Claim(ClaimTypes.Name, loginName),
+                    new Claim(ClaimTypes.Name, sessionLoginName.ALoginName),
                     new Claim(ClaimTypes.Email, "demo@gmail.com"),
                     new Claim(ClaimTypes.DateOfBirth, "01/01/1000"),
                     new Claim(ClaimTypes.Role, "Admin")
@@ -46,51 +40,44 @@ namespace MongoDB_Session_Login.Controllers
                 var userIdentity = new ClaimsIdentity(userClaims, "user identity");
                 var userPrincipal = new ClaimsPrincipal(new[] { userIdentity });
                 await HttpContext.SignInAsync(userPrincipal);
-                var name = User.Claims.FirstOrDefault();
+
                 return Ok(newSessionLogin);
             }
-
-            return NotFound("Login Name does not exist");
+            else
+            {
+                await _sessionLoginService.CreateAsync(sessionLoginName.ALoginName);
+                return Ok("Created new session login");
+            }
         }
 
         [HttpGet("RequireLogin")]
+        [ApiExplorerSettings(IgnoreApi = true)]
         public IActionResult RequireLogin()
         {
             return Unauthorized();
         }
 
-        [HttpGet("FakeLogout")]
-        [Authorize] 
-        public IActionResult FakeLogout()
+        [HttpPost("FakeLogout")]
+        [Authorize(Policy = "CheckLogout")]
+        public async Task<IActionResult> FakeLogout()
         {
-            Response.Cookies.Delete("session_token");
-            HttpContext.SignOutAsync();
-            //Response.Cookies.Delete("session_login");
-
-            return Ok();
+            if (!String.IsNullOrEmpty(HttpContext.User.Identity.Name))
+            {
+                Response.Cookies.Delete("session_token", CustomCookieOptions.option);
+                await HttpContext.SignOutAsync();
+                await _sessionLoginService.UpdateLogoutTimeAsync(HttpContext.User.Identity.Name);
+            }
+            else
+            {
+                await _sessionLoginService.UpdateLogoutTimeAsync(null);
+            }
+                return Ok();
         }
-
-        /* [HttpGet("GetSessionTokeFromCookie")]
-         [Authorize]
-         public IActionResult Get()
-         {
-             return Ok(Request.Cookies["session_token"]);
-         }*/
-        /*
-                [HttpGet("IsSessionTokenValid/{loginName}/{currentSessionToken}")]
-                public async Task<bool> IsSessionTokenValid(string loginName, string currentSessionToken) =>
-                    await _sessionLoginService.IsSessionTokenValid(loginName, currentSessionToken);*/
 
         [HttpGet("v1/GetAllSessionLogin")]
         [Authorize(Policy = "CheckSessionToken")]
         public async Task<List<SessionLogin>> GetAll()
         {
-            /*if (!String.IsNullOrEmpty(HttpContext.Session.GetString("current_session_token")))
-            {
-                Console.WriteLine(HttpContext.Session.GetString("current_user_login"));
-                Console.WriteLine(HttpContext.Session.GetString("current_session_token"));
-            }*/
-
             return await _sessionLoginService.GetAllAsync();
         }
 
@@ -104,14 +91,14 @@ namespace MongoDB_Session_Login.Controllers
         public async Task<SessionLogin> Get(string loginName) =>
             await _sessionLoginService.GetAsync(loginName);
 
-        [HttpPost("v1/AddAccount")]
+     /*   [HttpPost("v1/AddAccount")]
         [Authorize(Policy = "CheckSessionToken")]
         public async Task<IActionResult> Create([FromBody] SessionLoginName sessionLoginName)
         {
-            var isSessionLoginExisted = await _sessionLoginService.GetAsync(sessionLoginName.LoginName) is not null;
+            var isSessionLoginExisted = await _sessionLoginService.GetAsync(sessionLoginName.ALoginName) is not null;
             if (!isSessionLoginExisted)
             {
-                await _sessionLoginService.CreateAsync(sessionLoginName.LoginName, HttpContext.Connection.RemoteIpAddress.ToString());
+                await _sessionLoginService.CreateAsync(sessionLoginName.ALoginName);
 
                 return Ok();
             }
@@ -119,22 +106,7 @@ namespace MongoDB_Session_Login.Controllers
             {
                 return Conflict("Already existed login name");
             }
-        }
-
-        /* [HttpPut("v1/UpdateTokenSession/{loginName}")]
-         public async Task<IActionResult> UpdateTokenSession(string loginName)
-         {
-             var sessionLogin = await _sessionLoginService.GetAsync(loginName);
-
-             if (sessionLogin is null)
-             {
-                 return NotFound();
-             }
-
-             await _sessionLoginService.UpdateTokenAsync(loginName);
-
-             return NoContent();
-         }*/
+        }*/
 
         [HttpDelete("v1/DeleteAccount/{loginName}")]
         [Authorize(Policy = "CheckSessionToken")]
@@ -143,7 +115,7 @@ namespace MongoDB_Session_Login.Controllers
             var sessionLogin = await _sessionLoginService.GetAsync(loginName);
             if (sessionLogin == null)
             {
-                return NotFound();
+                return NotFound("Account does not exist");
             }
             await _sessionLoginService.DeleteAsync(loginName);
 
@@ -152,6 +124,7 @@ namespace MongoDB_Session_Login.Controllers
 
         [HttpDelete("v1/DeleteAll")]
         [Authorize(Policy = "CheckSessionToken")]
+        [ApiExplorerSettings(IgnoreApi = true)]
         public async Task<ActionResult> DeleteAll()
         {
             await _sessionLoginService.DeleteAllAsync();

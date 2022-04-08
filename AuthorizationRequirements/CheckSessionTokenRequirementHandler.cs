@@ -15,6 +15,7 @@ namespace MongoDB_Session_Login.AuthorizationRequirements
             _accessor = accessor;
             _sessionLoginService = sessionLoginService;
         }
+
         protected async override Task HandleRequirementAsync(AuthorizationHandlerContext context, CheckSessionTokenRequirement requirement)
         {
             var currentUserLogin = _accessor.HttpContext.User.Identity.Name;
