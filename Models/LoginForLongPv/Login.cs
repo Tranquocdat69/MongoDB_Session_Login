@@ -7,9 +7,9 @@ namespace MongoDB_Session_Login.Models.LoginForLongPv
 {
     public class Login
     {
-        public string Time { get; set; }
-        public UserTest User { get; set; }
-        public Permit Permit { get; set; }
-
+        public DateTime Time { get; set; }
+        public TauthUserlogin User { get; set; }
+        public TauthClientsession ClientSession { get; set; }
+        public TauthClientsessionlog ClientSessionLog { get; set; }
     }
 }

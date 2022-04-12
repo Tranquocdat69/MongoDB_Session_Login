@@ -13,9 +13,11 @@ namespace MongoDB_Session_Login.Controllers
     public class LoginNController : ControllerBase
     {
         private readonly SessionLoginService _sessionLoginService;
-        private readonly OracleContext _context;
-        public LoginNController(OracleContext context, SessionLoginService sessionLoginService)
+        private readonly TAuthContext _context;
+        private readonly HashService _hashService;
+        public LoginNController(TAuthContext context, SessionLoginService sessionLoginService,HashService hashService)
         {
+            _hashService = hashService;
             _context = context;
             _sessionLoginService = sessionLoginService;
         }
@@ -23,62 +25,95 @@ namespace MongoDB_Session_Login.Controllers
         [HttpPost("/Register")]
         public async Task<IActionResult> Register(Login loginCache)
         {
-            CheckLogin login = new CheckLogin();
-            Permit permit = new Permit();
-            UserTest user = new UserTest();
+            if (ModelState.IsValid)
+            {
+                var checkUser = _context.TAUTH_USERLOGIN.Any(f => f.ACLIENTCODE == loginCache.User.ACLIENTCODE);
 
-            user.ALOGINNAME = loginCache.User.ALOGINNAME;
-            user.ATOKEN = loginCache.User.ATOKEN;
-            user.AIPSERVER = loginCache.User.AIPSERVER;
-            user.AIPCLIENT = loginCache.User.AIPCLIENT;
-            user.AUSERAGENT = loginCache.User.AUSERAGENT;
-            user.ABROWSER = loginCache.User.ABROWSER;
-            user.ALOGINTIME = loginCache.User.ALOGINTIME;
-            user.ALOGOUTTIME = loginCache.User.ALOGOUTTIME;
-            user.ASESSIONNO = loginCache.User.ASESSIONNO;
-            user.ASESSIONFIRSTLOGIN = loginCache.User.ASESSIONFIRSTLOGIN;
-            user.AISMOBILE = loginCache.User.AISMOBILE;
-            user.ABROWSERNAME = loginCache.User.ABROWSERNAME;
-            user.ABROWSERVERS = loginCache.User.ABROWSERVERS;
-            user.ACHKPASS2 = loginCache.User.ACHKPASS2;
-            _context.Add(user);
-            _context.SaveChanges();
+                if (checkUser == false)
+                {
+                    var hashPassword = _hashService.MD5Hash(loginCache.User.APASSWORD);
+                    var hashPassword2 = _hashService.MD5Hash(loginCache.User.APASSWORDII);
 
-            permit.EzTradeChargeRate = loginCache.Permit.EzTradeChargeRate;
-            permit.EzTrade = loginCache.Permit.EzTrade;
-            permit.EzTransfer = loginCache.Permit.EzTransfer;
-            permit.EzAdvance = loginCache.Permit.EzAdvance;
-            permit.EzMargin = loginCache.Permit.EzMargin;
-            permit.EzMortgage = loginCache.Permit.EzMortgage;
-            permit.EzOddlot = loginCache.Permit.EzOddlot;
-            permit.EzMarginPro = loginCache.Permit.EzMarginPro;
-            permit.EzFuture = loginCache.Permit.EzFuture;
-            permit.EzTvdt = loginCache.Permit.EzTvdt;
-            permit.vTblid = loginCache.Permit.vTblid;
-            permit.vFeeUP = loginCache.Permit.vFeeUP;
-            permit.vFeeUP_CCQ = loginCache.Permit.vFeeUP_CCQ;
-            permit.vFeeLISTED_CP = loginCache.Permit.vFeeLISTED_CP;
-            permit.vFeeHSX_CP = loginCache.Permit.vFeeHSX_CP;
-            permit.vFeeRate_TP = loginCache.Permit.vFeeRate_TP;
-            permit.vFeeLISTED_ETF = loginCache.Permit.vFeeLISTED_ETF;
-            permit.vFeeLISTED_CCQ = loginCache.Permit.vFeeLISTED_CCQ;
-            permit.vFeeHSX_CCQ = loginCache.Permit.vFeeHSX_CCQ;
-            permit.vFeeHSX_CQ = loginCache.Permit.vFeeHSX_CQ;
-            permit.vFeeHSX_ETF = loginCache.Permit.vFeeHSX_ETF;
-            permit.vFeeLISTED_CQ = loginCache.Permit.vFeeLISTED_CQ;
-            permit.UserId = user.ID;
+                    TauthClientsession clientSession = new TauthClientsession();
+                    TauthClientsessionlog clientSessionLog = new TauthClientsessionlog();
+                    TauthUserlogin user = new TauthUserlogin();
 
-            login.Time = DateTime.Now.ToString();
-            login.UserId = user.ID;
-            _context.Add(login);
-            _context.Add(permit);
-            _context.SaveChanges();
+                    user.ACLIENTCODE = loginCache.User.ACLIENTCODE;
+                    user.ACLIENTNAME = loginCache.User.ACLIENTNAME;
+                    user.APASSWORD = hashPassword;
+                    user.APASSWORDII = hashPassword2;
+                    user.ALASTPASSWORDCHANGEDDATE = loginCache.User.ALASTPASSWORDCHANGEDDATE;
+                    user.ARSATOKEN = loginCache.User.ARSATOKEN;
+                    user.ACLIENTLOCKSTATUS = loginCache.User.ACLIENTLOCKSTATUS;
+                    user.ACLIENTLOCKTIME = loginCache.User.ACLIENTLOCKTIME;
+                    user.ADESCRIPTION = loginCache.User.ADESCRIPTION;
+                    user.AFIRSTLOGIN = loginCache.User.AFIRSTLOGIN;
+                    user.ARETRYCOUNT = loginCache.User.ARETRYCOUNT;
+                    user.AUSINGPWD1BY1 = loginCache.User.AUSINGPWD1BY1;
+                    user.AMOBILEDEVICEID = loginCache.User.AMOBILEDEVICEID;
+                    user.AREASON = loginCache.User.AREASON;
 
+                    //Add UserLogin
+                    _context.TAUTH_USERLOGIN.Add(user);
 
-            await _sessionLoginService.CreateAsync(loginCache.User.ALOGINNAME, HttpContext.Connection.RemoteIpAddress.ToString());
+                    clientSession.ALOGINNAME = loginCache.User.ACLIENTCODE;
+                    clientSession.ATOKEN = loginCache.ClientSession.ATOKEN;
+                    clientSession.AIPSERVER = loginCache.ClientSession.AIPSERVER;
+                    clientSession.AIPCLIENT = loginCache.ClientSession.AIPCLIENT;
+                    clientSession.AUSERAGENT = loginCache.ClientSession.AUSERAGENT;
+                    clientSession.ABROWSER = loginCache.ClientSession.ABROWSER;
+                    clientSession.ALOGINTIME = loginCache.ClientSession.ALOGINTIME;
+                    clientSession.ALOGOUTTIME = loginCache.ClientSession.ALOGOUTTIME;
+                    clientSession.ASESSIONNO = loginCache.ClientSession.ASESSIONNO;
+                    clientSession.ASESSIONFIRSTLOGIN = loginCache.ClientSession.ASESSIONFIRSTLOGIN;
+                    clientSession.AISMOBILE = loginCache.ClientSession.AISMOBILE;
+                    clientSession.ABROWSERNAME = loginCache.ClientSession.ABROWSERNAME;
+                    clientSession.ABROWSERVERS = loginCache.ClientSession.ABROWSERVERS;
+                    clientSession.ACHKPASS2 = loginCache.ClientSession.ACHKPASS2;
 
+                    //Add ClientSession
+                    _context.TAUTH_CLIENTSESSION.Add(clientSession);
 
-            return Ok(user);
+                    clientSessionLog.ATBLID = loginCache.ClientSessionLog.ATBLID;
+                    clientSessionLog.ALOGINNAME = loginCache.User.ACLIENTCODE;
+                    clientSessionLog.AERRCODE = loginCache.ClientSessionLog.AERRCODE;
+                    clientSessionLog.AERRMESSAGE = loginCache.ClientSessionLog.AERRMESSAGE;
+                    clientSessionLog.ASOURCE = loginCache.ClientSessionLog.ASOURCE;
+                    clientSessionLog.AIPSERVER = loginCache.ClientSessionLog.AIPSERVER;
+                    clientSessionLog.AIPCLIENT = loginCache.ClientSessionLog.AIPCLIENT;
+                    clientSessionLog.AREFERER = loginCache.ClientSessionLog.AREFERER;
+                    clientSessionLog.AUSERAGENT = loginCache.ClientSessionLog.AUSERAGENT;
+                    clientSessionLog.ABROWSER = loginCache.ClientSessionLog.ABROWSER;
+                    clientSessionLog.ALOGTIME = loginCache.ClientSessionLog.ALOGTIME;
+                    clientSessionLog.AACTIVITY = loginCache.ClientSessionLog.AACTIVITY;
+                    clientSessionLog.AACTIVITYUSR = loginCache.ClientSessionLog.AACTIVITYUSR;
+                    clientSessionLog.AACTIVITYDSC = loginCache.ClientSessionLog.AACTIVITYDSC;
+                    clientSessionLog.AACTIVITYBTNTYPE = loginCache.ClientSessionLog.AACTIVITYBTNTYPE;
+                    clientSessionLog.AISMOBILE = loginCache.ClientSessionLog.AISMOBILE;
+                    clientSessionLog.ABROWSERNAME = loginCache.ClientSessionLog.ABROWSERNAME;
+                    clientSessionLog.ABROWSERVERS = loginCache.ClientSessionLog.ABROWSERVERS;
+                    clientSessionLog.ABRKID = loginCache.ClientSessionLog.ABRKID;
+
+                    //_context.Add(user);
+                    //_context.Add(clientSession);
+
+                    //Add ClientSessionLog
+                    _context.TAUTH_CLIENTSESSIONLOG.Add(clientSessionLog);
+                    _context.SaveChanges();
+
+                    //await _sessionLoginService.CreateAsync(loginCache.User., HttpContext.Connection.RemoteIpAddress.ToString());
+                    return Ok(user);
+                }
+                else
+                {
+                    return BadRequest("Tai khoan da ton tai");
+                }
+            }
+            else
+            {
+                return BadRequest("Input sai");
+            }
+               
         }
 
         [HttpPost("/Login")]
@@ -90,28 +125,29 @@ namespace MongoDB_Session_Login.Controllers
                 {
                     return BadRequest("fail");
                 }
-                var user = _context.UserLogin.Where(s => s.ALOGINNAME.Equals(login.UserName) && s.ACHKPASS2.Equals(login.Password)).FirstOrDefault();
-                // ).FirstOrDefault(
+                var passwordHash = _hashService.MD5Hash(login.Password);
 
-                if (user != null)
+                //var user = _context.TAUTH_USERLOGIN.Where(s => s.ACLIENTCODE.Equals(login.UserName) && s.APASSWORD.Equals(passwordHash)).FirstOrDefault();
+
+                var user = _context.TAUTH_USERLOGIN.Any(f => f.ACLIENTCODE == login.UserName && f.APASSWORD == passwordHash);
+                if (user == true)
                 {
-                    var result = from u in _context.UserLogin
-                                 join p in _context.Permits on u.ID equals p.UserId
-                                 join r in _context.ResponseLogin on u.ID equals r.UserId
-                                 where u.ALOGINNAME == login.UserName && u.ACHKPASS2 == login.Password
+                    var result = from u in _context.TAUTH_USERLOGIN
+                                 join p in _context.TAUTH_CLIENTSESSION on u.ACLIENTCODE equals p.ALOGINNAME
+                                 //join r in _context.ResponseLogin on u.ID equals r.UserId
+                                 where u.ACLIENTCODE == login.UserName && u.APASSWORD == passwordHash
                                  select new Login
                                  {
-                                     Time = r.Time,
+                                     Time = DateTime.Now,
                                      User = u,
-                                     Permit = p,
-
+                                     ClientSession = p,
                                  };
-                    SessionLogin sessionLogin = await _sessionLoginService.GetAsync(login.UserName);
-                    if (sessionLogin is not null){
-                        var tokenNow = Guid.NewGuid().ToString();
-                        await _sessionLoginService.UpdateSessionToken(login.UserName,tokenNow);
-                        result.First().User.ATOKEN = tokenNow;
-                    }
+                    //SessionLogin sessionLogin = await _sessionLoginService.GetAsync(login.UserName);
+                    //if (sessionLogin is not null){
+                    //    var tokenNow = Guid.NewGuid().ToString();
+                    //    await _sessionLoginService.UpdateSessionToken(login.UserName,tokenNow);
+                    //    result.First().User.ATOKEN = tokenNow;
+                    //}
 
                     
 

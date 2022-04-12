@@ -8,6 +8,6 @@ namespace MongoDB_Session_Login.Models.LoginForLongPv
     public class FormLogin
     {
         public string UserName { get; set; }
-        public int Password { get; set; }
+        public string Password { get; set; }
     }
 }

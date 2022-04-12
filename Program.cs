@@ -12,7 +12,7 @@ builder.Services.AddControllers().AddJsonOptions(o => o.JsonSerializerOptions.Pr
 
 builder.Services.Configure<SessionLoginDatabaseSettings>(builder.Configuration.GetSection("SessionLoginDatabase"));
 builder.Services.AddSingleton<SessionLoginService>();
-
+builder.Services.AddSingleton<HashService>();
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
@@ -22,7 +22,7 @@ builder.Services.AddSession(config => {
     config.Cookie.Name = "session_login";
     config.IdleTimeout = new TimeSpan(0, 0, 30);
 });
-builder.Services.AddDbContext<OracleContext>(options =>
+builder.Services.AddDbContext<TAuthContext>(options =>
                  options.UseOracle(connString));
 builder.Services.AddCors(o => o.AddPolicy("MyPolicy", builder =>
 {

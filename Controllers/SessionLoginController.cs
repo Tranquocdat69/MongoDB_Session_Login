@@ -13,9 +13,9 @@ namespace MongoDB_Session_Login.Controllers
     public class SessionLoginController : ControllerBase
     {
         private readonly SessionLoginService _sessionLoginService;
-        private readonly OracleContext _oracleContext;
+        private readonly TAuthContext _oracleContext;
 
-        public SessionLoginController(SessionLoginService sessionLoginService, OracleContext oracleContext)
+        public SessionLoginController(SessionLoginService sessionLoginService, TAuthContext oracleContext)
         {
             _sessionLoginService = sessionLoginService;
             _oracleContext = oracleContext;
@@ -29,20 +29,19 @@ namespace MongoDB_Session_Login.Controllers
                 {
                     return BadRequest("fail");
                 }
-                var user = _oracleContext.UserLogin.Where(s => s.ALOGINNAME.Equals(login.UserName) && s.ACHKPASS2.Equals(login.Password)).FirstOrDefault();
+                var user = _oracleContext.TAUTH_USERLOGIN.Where(s => s.ACLIENTCODE.Equals(login.UserName) && s.APASSWORD.Equals(login.Password)).FirstOrDefault();
 
                 if (user != null)
                 {
-                    var result = from u in _oracleContext.UserLogin
-                                 join p in _oracleContext.Permits on u.ID equals p.UserId
-                                 join r in _oracleContext.ResponseLogin on u.ID equals r.UserId
-                                 where u.ALOGINNAME == login.UserName && u.ACHKPASS2 == login.Password
+                    var result = from u in _oracleContext.TAUTH_USERLOGIN
+                                 join p in _oracleContext.TAUTH_CLIENTSESSION on u.ACLIENTCODE equals p.ALOGINNAME
+                                 //join r in _context.ResponseLogin on u.ID equals r.UserId
+                                 where u.ACLIENTCODE == login.UserName && u.APASSWORD == login.Password
                                  select new Login
                                  {
-                                     Time = r.Time,
+                                     Time = DateTime.Now,
                                      User = u,
-                                     Permit = p,
-
+                                     ClientSession = p,
                                  };
                     SessionLogin sessionLogin = await _sessionLoginService.GetAsync(login.UserName);
                     if (sessionLogin is null)
